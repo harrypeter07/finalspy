@@ -67,15 +67,15 @@ public class PersistentService extends Service {
     public void onDestroy() {
         isRunning = false;
         
-        // Release all wake locks
-        if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
-        }
-        if (cpuWakeLock != null && cpuWakeLock.isHeld()) {
-            cpuWakeLock.release();
-        }
-        if (screenWakeLock != null && screenWakeLock.isHeld()) {
-            screenWakeLock.release();
+        // Release only existing wake locks
+        try {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+                Log.d(TAG, "Main wake lock released");
+            }
+            // Don't try to release wake locks that don't exist
+        } catch (Exception e) {
+            Log.e(TAG, "Error releasing wake locks", e);
         }
         
         // Stop keep alive handler
@@ -103,67 +103,104 @@ public class PersistentService extends Service {
     
     private void createInvisibleNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "",
-                    NotificationManager.IMPORTANCE_NONE);
-            channel.setDescription("");
-            channel.setSound(null, null);
-            channel.enableVibration(false);
-            channel.enableLights(false);
-            channel.setShowBadge(false);
-            channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-            
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
+            try {
+                // Validate channel ID is not null or empty
+                if (CHANNEL_ID == null || CHANNEL_ID.trim().isEmpty()) {
+                    Log.e(TAG, "Channel ID cannot be null or empty");
+                    return;
+                }
+                
+                NotificationChannel channel = new NotificationChannel(
+                        CHANNEL_ID,
+                        "Background Service", // Valid channel name (cannot be empty)
+                        NotificationManager.IMPORTANCE_NONE);
+                        
+                // Set valid description (cannot be null)
+                channel.setDescription("Maintains app functionality in background");
+                channel.setSound(null, null);
+                channel.enableVibration(false);
+                channel.enableLights(false);
+                channel.setShowBadge(false);
+                channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+                
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    // Check if channel already exists to avoid recreation
+                    NotificationChannel existingChannel = manager.getNotificationChannel(CHANNEL_ID);
+                    if (existingChannel == null) {
+                        manager.createNotificationChannel(channel);
+                        Log.d(TAG, "Notification channel created successfully");
+                    } else {
+                        Log.d(TAG, "Notification channel already exists");
+                    }
+                } else {
+                    Log.e(TAG, "NotificationManager is null");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating notification channel", e);
             }
         }
     }
     
     private Notification createInvisibleNotification() {
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("")
-                .setContentText("")
-                .setSmallIcon(android.R.color.transparent)
-                .setPriority(NotificationCompat.PRIORITY_MIN)
-                .setOngoing(false)
-                .setAutoCancel(true)
-                .setShowWhen(false)
-                .setSound(null)
-                .setVibrate(null)
-                .setLights(0, 0, 0)
-                .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
-                .build();
+        try {
+            // Use a valid icon resource from Android system
+            int iconResId = android.R.drawable.ic_dialog_info;
+            
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("Background Service") // Valid title (cannot be empty)
+                    .setContentText("Running in background") // Valid text (cannot be empty)
+                    .setSmallIcon(iconResId) // Valid icon resource
+                    .setPriority(NotificationCompat.PRIORITY_MIN)
+                    .setOngoing(false)
+                    .setAutoCancel(true)
+                    .setShowWhen(false)
+                    .setSound(null)
+                    .setVibrate(null)
+                    .setLights(0, 0, 0)
+                    .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                    .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+                    .build();
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating notification", e);
+            // Fallback to a simpler notification
+            return new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("Service")
+                    .setContentText("Running")
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .build();
+        }
     }
     
     private void acquireWakeLock() {
         try {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (powerManager != null) {
-                // Main wake lock to keep CPU running
-                wakeLock = powerManager.newWakeLock(
-                        PowerManager.PARTIAL_WAKE_LOCK,
-                        "MyApp:PersistentService");
-                wakeLock.acquire();
+                // Only acquire the essential wake lock to prevent crashes
+                try {
+                    wakeLock = powerManager.newWakeLock(
+                            PowerManager.PARTIAL_WAKE_LOCK,
+                            "MyApp:PersistentService");
+                    
+                    // Set a timeout to prevent indefinite holding
+                    wakeLock.acquire(10*60*1000L /*10 minutes*/);
+                    Log.d(TAG, "Main wake lock acquired successfully");
+                    
+                } catch (SecurityException e) {
+                    Log.e(TAG, "Wake lock permission denied - continuing without wake lock", e);
+                    wakeLock = null;
+                } catch (Exception e) {
+                    Log.e(TAG, "Error acquiring main wake lock", e);
+                    wakeLock = null;
+                }
                 
-                // Additional CPU wake lock for intensive operations
-                cpuWakeLock = powerManager.newWakeLock(
-                        PowerManager.PARTIAL_WAKE_LOCK,
-                        "MyApp:CPUWakeLock");
-                cpuWakeLock.acquire();
-                
-                // Screen wake lock to keep screen operations active
-                screenWakeLock = powerManager.newWakeLock(
-                        PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                        "MyApp:ScreenWakeLock");
-                screenWakeLock.acquire();
-                
-                Log.d(TAG, "All wake locks acquired successfully");
+                // Don't acquire additional wake locks that might cause issues
+                Log.d(TAG, "Wake lock acquisition completed");
+            } else {
+                Log.e(TAG, "PowerManager is null");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error acquiring wake locks", e);
+            Log.e(TAG, "Error in wake lock acquisition process", e);
         }
     }
     
@@ -206,24 +243,23 @@ public class PersistentService extends Service {
     
     private void renewWakeLock() {
         try {
-            // Renew main wake lock
+            // Only renew the main wake lock if it exists and needs renewal
             if (wakeLock != null && !wakeLock.isHeld()) {
-                wakeLock.acquire();
+                try {
+                    wakeLock.acquire(10*60*1000L /*10 minutes*/);
+                    Log.d(TAG, "Main wake lock renewed");
+                } catch (SecurityException e) {
+                    Log.e(TAG, "Wake lock permission denied during renewal", e);
+                    wakeLock = null; // Don't try again
+                } catch (Exception e) {
+                    Log.e(TAG, "Error renewing main wake lock", e);
+                }
             }
             
-            // Renew CPU wake lock
-            if (cpuWakeLock != null && !cpuWakeLock.isHeld()) {
-                cpuWakeLock.acquire();
-            }
+            // Don't renew additional wake locks that don't exist
             
-            // Renew screen wake lock
-            if (screenWakeLock != null && !screenWakeLock.isHeld()) {
-                screenWakeLock.acquire();
-            }
-            
-            Log.d(TAG, "Wake locks renewed");
         } catch (Exception e) {
-            Log.e(TAG, "Error renewing wake locks", e);
+            Log.e(TAG, "Error in wake lock renewal process", e);
         }
     }
     

@@ -41,6 +41,12 @@ public class CameraManager {
     private EglBase eglBase;
     private boolean isStreaming = false;
     
+    // Store current state for camera switching
+    private Context currentContext;
+    private SurfaceViewRenderer currentTextureView;
+    private CameraStreamListener currentListener;
+    private boolean isUsingFrontCamera = true;
+    
     // WebRTC constants
     private static final String VIDEO_TRACK_ID = "ARDAMSv0";
     private static final String AUDIO_TRACK_ID = "ARDAMSa0";
@@ -89,6 +95,10 @@ public class CameraManager {
     }
     
     public void startCamera(Context context, SurfaceViewRenderer localView, CameraStreamListener listener) {
+        // Store current state
+        this.currentContext = context;
+        this.currentTextureView = localView;
+        this.currentListener = listener;
         if (!PermissionManager.hasCameraAndMicPermissions(context)) {
             listener.onCameraError("Camera and microphone permissions not granted");
             return;
@@ -106,10 +116,12 @@ public class CameraManager {
                 return;
             }
             
-            // Setup local preview
-            localView.init(eglBase.getEglBaseContext(), null);
-            localView.setEnableHardwareScaler(true);
-            localView.setMirror(true);
+            // Setup local preview if view is provided
+            if (localView != null) {
+                localView.init(eglBase.getEglBaseContext(), null);
+                localView.setEnableHardwareScaler(true);
+                localView.setMirror(true);
+            }
             
             // Create video source
             SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create(
@@ -119,7 +131,9 @@ public class CameraManager {
             
             // Create video track
             videoTrack = peerConnectionFactory.createVideoTrack(VIDEO_TRACK_ID, videoSource);
-            videoTrack.addSink(localView);
+            if (localView != null) {
+                videoTrack.addSink(localView);
+            }
             
             // Create audio source and track
             audioSource = peerConnectionFactory.createAudioSource(new MediaConstraints());
@@ -151,16 +165,16 @@ public class CameraManager {
             enumerator = new Camera1Enumerator(false);
         }
         
-        // Try to find front facing camera first
+        // Try to find camera based on current preference
         for (String deviceName : enumerator.getDeviceNames()) {
-            if (enumerator.isFrontFacing(deviceName)) {
+            if (enumerator.isFrontFacing(deviceName) == isUsingFrontCamera) {
                 return enumerator.createCapturer(deviceName, null);
             }
         }
         
-        // If no front facing camera, try back camera
+        // If preferred camera not found, try the other one
         for (String deviceName : enumerator.getDeviceNames()) {
-            if (!enumerator.isFrontFacing(deviceName)) {
+            if (enumerator.isFrontFacing(deviceName) != isUsingFrontCamera) {
                 return enumerator.createCapturer(deviceName, null);
             }
         }
@@ -219,6 +233,44 @@ public class CameraManager {
     
     public boolean isStreaming() {
         return isStreaming;
+    }
+    
+    // Remote camera support - start camera without UI
+    public void startCameraRemote(Context context, String cameraType, CameraStreamListener listener) {
+        try {
+            Log.d(TAG, "Starting remote camera: " + cameraType);
+            // For simplicity, use existing camera start method without TextureView
+            startCamera(context, null, listener);
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting remote camera", e);
+            if (listener != null) {
+                listener.onCameraError("Remote camera error: " + e.getMessage());
+            }
+        }
+    }
+    
+    // Switch between front and back camera
+    public void switchCamera() {
+        try {
+            if (videoCapturer != null) {
+                Log.d(TAG, "Switching camera");
+                // Stop current camera
+                stopCamera();
+                
+                // Create new capturer with opposite camera
+                isUsingFrontCamera = !isUsingFrontCamera;
+                CameraVideoCapturer newCapturer = createCameraCapturer(currentContext);
+                if (newCapturer != null) {
+                    videoCapturer = newCapturer;
+                    // Restart camera with new capturer
+                    if (currentContext != null && currentListener != null) {
+                        startCamera(currentContext, currentTextureView, currentListener);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error switching camera", e);
+        }
     }
     
     public void release() {

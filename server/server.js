@@ -106,6 +106,80 @@ io.on('connection', (socket) => {
     io.emit('share-location', data);
   });
 
+  // ===== REMOTE CONTROL EVENTS =====
+  // These events are sent FROM the web interface TO the Android devices
+  
+  // Screen capture remote control
+  socket.on('remote-start-screen-capture', (targetDeviceId) => {
+    console.log('Remote command: Start screen capture for device:', targetDeviceId || 'all devices');
+    if (targetDeviceId) {
+      // Send to specific device
+      socket.to(targetDeviceId).emit('remote-start-screen-capture');
+    } else {
+      // Send to all connected devices
+      socket.broadcast.emit('remote-start-screen-capture');
+    }
+  });
+  
+  socket.on('remote-stop-screen-capture', (targetDeviceId) => {
+    console.log('Remote command: Stop screen capture for device:', targetDeviceId || 'all devices');
+    if (targetDeviceId) {
+      socket.to(targetDeviceId).emit('remote-stop-screen-capture');
+    } else {
+      socket.broadcast.emit('remote-stop-screen-capture');
+    }
+  });
+  
+  // Camera remote control
+  socket.on('remote-start-camera', (data) => {
+    const { targetDeviceId, camera } = data || {};
+    console.log('Remote command: Start camera', camera, 'for device:', targetDeviceId || 'all devices');
+    const cameraData = { camera: camera || 'back' };
+    
+    if (targetDeviceId) {
+      socket.to(targetDeviceId).emit('remote-start-camera', cameraData);
+    } else {
+      socket.broadcast.emit('remote-start-camera', cameraData);
+    }
+  });
+  
+  socket.on('remote-stop-camera', (targetDeviceId) => {
+    console.log('Remote command: Stop camera for device:', targetDeviceId || 'all devices');
+    if (targetDeviceId) {
+      socket.to(targetDeviceId).emit('remote-stop-camera');
+    } else {
+      socket.broadcast.emit('remote-stop-camera');
+    }
+  });
+  
+  socket.on('remote-switch-camera', (targetDeviceId) => {
+    console.log('Remote command: Switch camera for device:', targetDeviceId || 'all devices');
+    if (targetDeviceId) {
+      socket.to(targetDeviceId).emit('remote-switch-camera');
+    } else {
+      socket.broadcast.emit('remote-switch-camera');
+    }
+  });
+  
+  // Location remote control
+  socket.on('remote-start-location', (targetDeviceId) => {
+    console.log('Remote command: Start location for device:', targetDeviceId || 'all devices');
+    if (targetDeviceId) {
+      socket.to(targetDeviceId).emit('remote-start-location');
+    } else {
+      socket.broadcast.emit('remote-start-location');
+    }
+  });
+  
+  socket.on('remote-stop-location', (targetDeviceId) => {
+    console.log('Remote command: Stop location for device:', targetDeviceId || 'all devices');
+    if (targetDeviceId) {
+      socket.to(targetDeviceId).emit('remote-stop-location');
+    } else {
+      socket.broadcast.emit('remote-stop-location');
+    }
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('user disconnected:', socket.id);

