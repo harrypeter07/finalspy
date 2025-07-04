@@ -157,16 +157,22 @@
         socket.on('share-screen', (data) => {
             console.log('Received screen data:', data ? 'data available' : 'no data');
             if (data && data.data) {
-                // Try different image formats for H.264 encoded data
+                // Load and display the screenshot
                 const img = new Image();
                 img.onload = function() {
                     screenDisplay.src = img.src;
                     screenDisplay.style.display = 'block';
                     
-                    let statusText = `Receiving screen: ${data.width}x${data.height}`;
+                    // Create detailed status text with timing info
+                    let statusText = `Screenshot: ${data.width}x${data.height}`;
                     if (data.deviceInfo) {
                         statusText += ` from ${data.deviceInfo.deviceName} (${data.deviceInfo.ip})`;
                     }
+                    if (data.timestamp) {
+                        const time = new Date(data.timestamp).toLocaleTimeString();
+                        statusText += ` at ${time}`;
+                    }
+                    statusText += ' (Updates every 2 seconds)';
                     screenStatus.textContent = statusText;
                 };
                 
@@ -175,7 +181,7 @@
                     screenStatus.textContent = 'Error displaying screen data';
                 };
                 
-                // Try different MIME types for the base64 data
+                // Display JPEG screenshot
                 img.src = 'data:image/jpeg;base64,' + data.data;
             }
         });

@@ -22,4 +22,7 @@ public class Constants {
     
     // Location update interval (in milliseconds)
     public static final long LOCATION_UPDATE_INTERVAL = 10000;  // 10 seconds
+    
+    // Screenshot capture interval (in milliseconds)
+    public static final long SCREENSHOT_INTERVAL = 2000;  // 2 seconds
 }

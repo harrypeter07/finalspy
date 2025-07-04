@@ -113,33 +113,16 @@ public class ScreenshotManager {
     }
     
     private void setupScreenshotCapture(ScreenshotListener listener) {
-        // Create ImageReader for capturing screenshots
+        // Create ImageReader for capturing screenshots with higher capacity for buffering
         imageReader = ImageReader.newInstance(
                 Constants.SCREEN_CAPTURE_WIDTH, 
                 Constants.SCREEN_CAPTURE_HEIGHT, 
-                PixelFormat.RGBA_8888, 1);
+                PixelFormat.RGBA_8888, 2); // Increased capacity to 2 for better buffering
         
         // Create background thread for image processing
         handlerThread = new HandlerThread("ScreenshotThread");
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
-        
-        // Set up image available listener
-        imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-            @Override
-            public void onImageAvailable(ImageReader reader) {
-                try {
-                    Image image = reader.acquireLatestImage();
-                    if (image != null) {
-                        processImage(image, listener);
-                        image.close();
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error processing image", e);
-                    listener.onScreenshotError("Error processing image: " + e.getMessage());
-                }
-            }
-        }, handler);
         
         // Create virtual display
         virtualDisplay = mediaProjection.createVirtualDisplay(
@@ -153,20 +136,52 @@ public class ScreenshotManager {
         
         isCapturing = true;
         
+        Log.d(TAG, "Screenshot capture setup complete, starting timer...");
+        
         // Start taking screenshots at regular intervals
         startScreenshotTimer(listener);
     }
     
     private void startScreenshotTimer(ScreenshotListener listener) {
-        handler.post(new Runnable() {
+        // Wait a bit for virtual display to be ready
+        handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 if (isCapturing) {
-                    // Schedule next screenshot in 2 seconds
-                    handler.postDelayed(this, 2000);
+                    Log.d(TAG, "Timer tick - capturing screenshot...");
+                    captureScreenshot(listener);
+                    // Schedule next screenshot based on configured interval
+                    handler.postDelayed(this, Constants.SCREENSHOT_INTERVAL);
                 }
             }
-        });
+        }, 1000); // Initial delay of 1 second to let virtual display initialize
+    }
+    
+    private void captureScreenshot(ScreenshotListener listener) {
+        if (imageReader != null && isCapturing) {
+            try {
+                // Try to acquire the latest image from the ImageReader
+                Image image = imageReader.acquireLatestImage();
+                if (image != null) {
+                    Log.d(TAG, "Image acquired, processing...");
+                    processImage(image, listener);
+                    image.close();
+                } else {
+                    // If no image is available, try acquiring next available image
+                    image = imageReader.acquireNextImage();
+                    if (image != null) {
+                        Log.d(TAG, "Next image acquired, processing...");
+                        processImage(image, listener);
+                        image.close();
+                    } else {
+                        Log.w(TAG, "No image available for capture - virtual display may not be ready");
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error capturing screenshot: " + e.getMessage(), e);
+                // Don't call listener error for individual capture failures
+            }
+        }
     }
     
     private void processImage(Image image, ScreenshotListener listener) {
