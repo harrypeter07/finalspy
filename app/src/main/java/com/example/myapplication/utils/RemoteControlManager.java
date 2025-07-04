@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.example.myapplication.App;
+import com.example.myapplication.admin.DeviceOwnerManager;
 
 public class RemoteControlManager {
     private static final String TAG = "RemoteControlManager";
@@ -34,6 +35,13 @@ public class RemoteControlManager {
         this.mediaProjectionData = data;
         this.mediaProjectionResultCode = resultCode;
         this.hasScreenCapturePermission = true;
+        
+        // Also store in DeviceOwnerManager for persistence
+        Context context = App.getContext();
+        if (context != null) {
+            DeviceOwnerManager.getInstance().storeScreenCapturePermission(context, data, resultCode);
+        }
+        
         Log.d(TAG, "Screen capture permission stored for remote use");
     }
     
@@ -46,9 +54,13 @@ public class RemoteControlManager {
                 return;
             }
             
+            // Try to get stored permission first
+            if (!hasScreenCapturePermission) {
+                tryLoadStoredScreenCapturePermission(context);
+            }
+            
             if (!hasScreenCapturePermission) {
                 Log.e(TAG, "No screen capture permission available");
-                // Try to get permission from MediaProjectionManager
                 requestScreenCapturePermissionSilently();
                 return;
             }
@@ -169,13 +181,50 @@ public class RemoteControlManager {
         }
     }
     
+    // Try to load stored screen capture permission
+    private void tryLoadStoredScreenCapturePermission(Context context) {
+        try {
+            DeviceOwnerManager deviceOwnerManager = DeviceOwnerManager.getInstance();
+            
+            if (deviceOwnerManager.hasStoredScreenCapturePermission(context)) {
+                Intent storedIntent = deviceOwnerManager.getStoredScreenCaptureIntent(context);
+                int storedResultCode = deviceOwnerManager.getStoredScreenCaptureResultCode(context);
+                
+                if (storedIntent != null && storedResultCode != -1) {
+                    this.mediaProjectionData = storedIntent;
+                    this.mediaProjectionResultCode = storedResultCode;
+                    this.hasScreenCapturePermission = true;
+                    
+                    Log.d(TAG, "Loaded stored screen capture permission");
+                }
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading stored screen capture permission", e);
+        }
+    }
+    
     // Try to get screen capture permission silently (may not work on all devices)
     private void requestScreenCapturePermissionSilently() {
         try {
             Context context = App.getContext();
             if (context == null) return;
             
-            // This is a fallback - in practice, the permission should be granted through the UI first
+            DeviceOwnerManager deviceOwnerManager = DeviceOwnerManager.getInstance();
+            
+            // If we have device owner privileges, try to enable screen capture
+            if (deviceOwnerManager.isDeviceOwner() || deviceOwnerManager.isDeviceAdmin()) {
+                Log.d(TAG, "Attempting to enable screen capture with elevated privileges");
+                
+                // Get a new screen capture intent
+                Intent screenCaptureIntent = deviceOwnerManager.getScreenCapturePermissionIntent(context);
+                if (screenCaptureIntent != null) {
+                    // Store this intent for use (this simulates user permission)
+                    setScreenCapturePermission(screenCaptureIntent, android.app.Activity.RESULT_OK);
+                    return;
+                }
+            }
+            
             Log.w(TAG, "Screen capture permission not available for remote control. Permission must be granted through UI first.");
             
         } catch (Exception e) {

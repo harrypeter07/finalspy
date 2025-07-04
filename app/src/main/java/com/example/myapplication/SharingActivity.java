@@ -29,6 +29,7 @@ import com.example.myapplication.utils.ScreenCaptureManager;
 import com.example.myapplication.utils.ScreenshotManager;
 import com.example.myapplication.utils.SocketManager;
 import com.example.myapplication.utils.RemoteControlManager;
+import com.example.myapplication.admin.DeviceOwnerManager;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONObject;
@@ -96,6 +97,9 @@ public class SharingActivity extends AppCompatActivity {
         
         // Initialize remote control manager
         RemoteControlManager.getInstance();
+        
+        // Initialize device owner manager for elevated permissions
+        DeviceOwnerManager.getInstance().initialize(this);
     }
     
     private void startPersistentService() {

@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="#f5f5f5">
+
+    <LinearLayout
+        android:id="@+id/permissions_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="App Setup Required"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#2c3e50"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Grant the following permissions for full remote control capabilities"
+            android:textSize="14sp"
+            android:textColor="#7f8c8d"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Status Text -->
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Setup Progress: 0/5 completed"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#3498db"
+            android:gravity="center"
+            android:background="#ecf0f1"
+            android:padding="12dp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Basic Permissions Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <CheckBox
+                        android:id="@+id/cb_basic_permissions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:enabled="false" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Basic Permissions"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#2c3e50" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="REQUIRED"
+                        android:textSize="12sp"
+                        android:textColor="#e74c3c"
+                        android:background="#ffebee"
+                        android:padding="4dp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Camera, Location, Storage, and Network permissions"
+                    android:textSize="14sp"
+                    android:textColor="#7f8c8d"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btn_basic_permissions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Grant Basic Permissions"
+                    android:textColor="white"
+                    android:backgroundTint="#3498db" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Screen Capture Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <CheckBox
+                        android:id="@+id/cb_screen_capture"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:enabled="false" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Screen Capture"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#2c3e50" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="REQUIRED"
+                        android:textSize="12sp"
+                        android:textColor="#e74c3c"
+                        android:background="#ffebee"
+                        android:padding="4dp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Allows remote screen sharing and control"
+                    android:textSize="14sp"
+                    android:textColor="#7f8c8d"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btn_screen_capture"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Grant Screen Capture"
+                    android:textColor="white"
+                    android:backgroundTint="#e74c3c" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Device Admin Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <CheckBox
+                        android:id="@+id/cb_device_admin"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:enabled="false" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Device Admin"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#2c3e50" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="RECOMMENDED"
+                        android:textSize="12sp"
+                        android:textColor="#f39c12"
+                        android:background="#fef9e7"
+                        android:padding="4dp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enables advanced system control and remote management"
+                    android:textSize="14sp"
+                    android:textColor="#7f8c8d"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btn_device_admin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Device Admin"
+                    android:textColor="white"
+                    android:backgroundTint="#f39c12" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Battery Optimization Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <CheckBox
+                        android:id="@+id/cb_battery_optimization"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:enabled="false" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Battery Optimization"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#2c3e50" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="RECOMMENDED"
+                        android:textSize="12sp"
+                        android:textColor="#f39c12"
+                        android:background="#fef9e7"
+                        android:padding="4dp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Prevents Android from killing the app in background"
+                    android:textSize="14sp"
+                    android:textColor="#7f8c8d"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btn_battery_optimization"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Disable Battery Optimization"
+                    android:textColor="white"
+                    android:backgroundTint="#27ae60" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Accessibility Service Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <CheckBox
+                        android:id="@+id/cb_accessibility"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:enabled="false" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Accessibility Service"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#2c3e50" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="OPTIONAL"
+                        android:textSize="12sp"
+                        android:textColor="#95a5a6"
+                        android:background="#ecf0f1"
+                        android:padding="4dp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enhanced system interaction capabilities (optional)"
+                    android:textSize="14sp"
+                    android:textColor="#7f8c8d"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btn_accessibility"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Configure Accessibility (Optional)"
+                    android:textColor="white"
+                    android:backgroundTint="#95a5a6" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- ADB Instructions Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:background="#e8f5e8">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔧 Advanced Setup"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#27ae60"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="For maximum control, use ADB commands to grant system-level permissions"
+                    android:textSize="14sp"
+                    android:textColor="#2c3e50"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btn_adb_instructions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Show ADB Instructions"
+                    android:textColor="white"
+                    android:backgroundTint="#27ae60" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Continue Button -->
+        <Button
+            android:id="@+id/btn_continue"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Complete Setup First"
+            android:textSize="18sp"
+            android:textColor="white"
+            android:backgroundTint="#95a5a6"
+            android:enabled="false" />
+
+    </LinearLayout>
+
+</ScrollView>
