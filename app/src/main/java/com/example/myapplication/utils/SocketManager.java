@@ -1,7 +1,9 @@
 package com.example.myapplication.utils;
 
+import android.os.Build;
 import android.util.Log;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
@@ -46,6 +48,8 @@ public class SocketManager {
             // Setup basic event listeners
             socket.on(Socket.EVENT_CONNECT, args -> {
                 Log.d(TAG, "Socket connected");
+                // Register this device with the server
+                registerDevice();
             });
             
             socket.on(Socket.EVENT_DISCONNECT, args -> {
@@ -61,6 +65,25 @@ public class SocketManager {
             
         } catch (URISyntaxException e) {
             Log.e(TAG, "Socket initialization error", e);
+        }
+    }
+    
+    // Register this device with the server
+    private void registerDevice() {
+        try {
+            JSONObject deviceInfo = new JSONObject();
+            deviceInfo.put("deviceName", Build.MODEL);
+            deviceInfo.put("manufacturer", Build.MANUFACTURER);
+            deviceInfo.put("androidVersion", Build.VERSION.RELEASE);
+            deviceInfo.put("apiLevel", Build.VERSION.SDK_INT);
+            deviceInfo.put("deviceType", "Android");
+            deviceInfo.put("appVersion", "1.0"); // You can make this dynamic
+            
+            Log.d(TAG, "Registering device: " + deviceInfo.toString());
+            emit("register-device", deviceInfo);
+            
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating device registration data", e);
         }
     }
     

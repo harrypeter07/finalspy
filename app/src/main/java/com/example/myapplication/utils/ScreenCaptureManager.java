@@ -157,12 +157,13 @@ public class ScreenCaptureManager {
     }
     
     private void prepareVideoEncoder() throws IOException {
+        // Use JPEG encoder for better compatibility with web display
         MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 
                 Constants.SCREEN_CAPTURE_WIDTH, Constants.SCREEN_CAPTURE_HEIGHT);
         
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE, Constants.SCREEN_CAPTURE_BITRATE);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, 10); // Reduced frame rate for better stability
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
         
         encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);

@@ -18,6 +18,7 @@ import com.example.myapplication.utils.CameraManager;
 import com.example.myapplication.utils.LocationManager;
 import com.example.myapplication.utils.PermissionManager;
 import com.example.myapplication.utils.ScreenCaptureManager;
+import com.example.myapplication.utils.ScreenshotManager;
 import com.example.myapplication.utils.SocketManager;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -72,6 +73,9 @@ public class SharingActivity extends AppCompatActivity {
         
         // Initialize screen capture manager
         ScreenCaptureManager.getInstance().initialize(this);
+        
+        // Initialize screenshot manager
+        ScreenshotManager.getInstance().initialize(this);
         
         // Initialize camera manager
         CameraManager.getInstance().initialize(this);
@@ -226,17 +230,19 @@ public class SharingActivity extends AppCompatActivity {
     }
     
     private void startScreenCapture(Intent resultData, int resultCode) {
-        ScreenCaptureManager.getInstance().startCapture(this, resultData, resultCode, new ScreenCaptureManager.ScreenCaptureListener() {
+        // Use ScreenshotManager for better web compatibility
+        ScreenshotManager.getInstance().startCapture(this, resultData, resultCode, new ScreenshotManager.ScreenshotListener() {
             @Override
-            public void onScreenDataAvailable(byte[] data) {
-                // This method will be called when new screen data is available
+            public void onScreenshotAvailable(byte[] data) {
+                // This method will be called when new screenshot data is available
                 // The manager already sends this data to the server
+                Log.d(TAG, "Screenshot captured: " + data.length + " bytes");
             }
             
             @Override
-            public void onScreenCaptureError(String error) {
-                Log.e(TAG, "Screen capture error: " + error);
-                showMessage("Screen capture error: " + error);
+            public void onScreenshotError(String error) {
+                Log.e(TAG, "Screenshot error: " + error);
+                showMessage("Screenshot error: " + error);
                 
                 // Update UI
                 binding.screenSharingStatus.setText("Error: " + error);
@@ -246,13 +252,13 @@ public class SharingActivity extends AppCompatActivity {
         });
         
         // Update UI
-        binding.screenSharingStatus.setText("Sharing");
+        binding.screenSharingStatus.setText("Sharing Screenshots");
         binding.btnStartScreenSharing.setEnabled(false);
         binding.btnStopScreenSharing.setEnabled(true);
     }
     
     private void stopScreenCapture() {
-        ScreenCaptureManager.getInstance().stopCapture();
+        ScreenshotManager.getInstance().stopCapture();
         
         // Update UI
         binding.screenSharingStatus.setText("Not sharing");
