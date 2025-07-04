@@ -25,6 +25,7 @@ public class LocationManager {
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private boolean isTracking = false;
+    private Context context;
     
     public interface LocationUpdateListener {
         void onLocationUpdate(Location location);
@@ -43,6 +44,7 @@ public class LocationManager {
     }
     
     public void initialize(Context context) {
+        this.context = context.getApplicationContext();
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
     }
     
@@ -107,18 +109,34 @@ public class LocationManager {
     }
     
     private void sendLocationToServer(Location location) {
-        try {
-            JSONObject locationData = new JSONObject();
-            locationData.put("latitude", location.getLatitude());
-            locationData.put("longitude", location.getLongitude());
-            locationData.put("accuracy", location.getAccuracy());
-            locationData.put("timestamp", location.getTime());
-            
-            // Send location data via socket
-            SocketManager.getInstance().emit(Constants.EVENT_SHARE_LOCATION, locationData);
-            
-        } catch (JSONException e) {
-            Log.e(TAG, "Error creating location JSON", e);
-        }
+        // Use LocationHelper to get address and send location with readable address
+        LocationHelper.getAddressFromLocation(context, location.getLatitude(), location.getLongitude(), 
+            new LocationHelper.LocationAddressCallback() {
+                @Override
+                public void onAddressFound(String address, String city, String country) {
+                    // Send location with resolved address
+                    LocationHelper.sendLocationWithAddress(
+                        location.getLatitude(), 
+                        location.getLongitude(), 
+                        address, 
+                        city, 
+                        country
+                    );
+                }
+                
+                @Override
+                public void onAddressError(String error) {
+                    Log.w(TAG, "Address resolution failed: " + error);
+                    // Send location without address (fallback to coordinates only)
+                    LocationHelper.sendLocationWithAddress(
+                        location.getLatitude(), 
+                        location.getLongitude(), 
+                        null, 
+                        null, 
+                        null
+                    );
+                }
+            }
+        );
     }
 }
