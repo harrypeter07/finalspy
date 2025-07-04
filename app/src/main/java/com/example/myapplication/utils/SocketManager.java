@@ -86,6 +86,7 @@ public class SocketManager {
     // Send data through socket
     public void emit(String event, JSONObject data) {
         if (socket != null && socket.connected()) {
+            Log.d(TAG, "Emitting event: " + event + ", data size: " + (data != null ? data.toString().length() : "null"));
             socket.emit(event, data);
         } else {
             Log.e(TAG, "Socket not connected. Cannot emit event: " + event);

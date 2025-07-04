@@ -4,7 +4,7 @@ public class Constants {
     // IMPORTANT: Replace with your Render server URL after deployment
     // For local testing use: "http://10.0.2.2:3000" (for emulator) or your local IP like "http://192.168.1.100:3000"
     // For production use your Render URL: "https://your-render-app.onrender.com"
-    public static final String SERVER_URL = "https://your-render-app.onrender.com";
+    public static final String SERVER_URL = "https://finalspy.onrender.com";
     
     // Socket.IO events
     public static final String EVENT_SHARE_SCREEN = "share-screen";

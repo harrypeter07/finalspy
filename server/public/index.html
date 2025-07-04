@@ -90,7 +90,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // Connect to the server
-        const socket = io();
+        const socket = io({reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000});
         
         // DOM elements
         const statusElement = document.getElementById('status');
@@ -100,11 +100,16 @@
         const cameraStatus = document.getElementById('camera-status');
         const locationStatus = document.getElementById('location-status');
         
-        // Connection status
+// Connection status
         socket.on('connect', () => {
             statusElement.textContent = 'Connected to server';
             statusElement.classList.remove('disconnected');
             statusElement.classList.add('connected');
+
+            // Reset status texts when reconnecting
+            screenStatus.textContent = 'Waiting for screen sharing...';
+            cameraStatus.textContent = 'Waiting for camera sharing...';
+            locationStatus.textContent = 'Waiting for location sharing...';
         });
         
         socket.on('disconnect', () => {
@@ -115,6 +120,7 @@
         
         // Screen sharing
         socket.on('share-screen', (data) => {
+            console.log('Received screen data:', data ? 'data available' : 'no data');
             if (data && data.data) {
                 screenDisplay.src = 'data:image/jpeg;base64,' + data.data;
                 screenStatus.textContent = `Receiving screen: ${data.width}x${data.height}`;
@@ -123,6 +129,7 @@
         
         // Camera sharing
         socket.on('share-voice', (data) => {
+            console.log('Received camera data:', data ? 'data available' : 'no data');
             if (data && data.data) {
                 cameraDisplay.src = 'data:image/jpeg;base64,' + data.data;
                 cameraStatus.textContent = `Receiving camera: ${data.width}x${data.height}`;
@@ -147,6 +154,7 @@
         }
         
         socket.on('share-location', (data) => {
+            console.log('Received location data:', data ? JSON.stringify(data) : 'no data');
             if (data && data.latitude && data.longitude) {
                 const position = {
                     lat: data.latitude,

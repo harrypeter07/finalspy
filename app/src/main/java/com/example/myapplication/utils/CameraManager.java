@@ -1,6 +1,7 @@
 package com.example.myapplication.utils;
 
 import android.content.Context;
+import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -197,8 +198,10 @@ public class CameraManager {
     
     public void sendCameraDataToServer(byte[] data, int width, int height) {
         try {
-            // Convert byte array to Base64 string to send over JSON
-            String base64Data = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
+            Log.d(TAG, "Sending camera data to server: " + (data != null ? data.length + " bytes" : "null") + ", " + width + "x" + height);
+            
+            // Convert image to Base64
+            String base64Data = Base64.encodeToString(data, Base64.DEFAULT);
             
             JSONObject cameraData = new JSONObject();
             cameraData.put("data", base64Data);

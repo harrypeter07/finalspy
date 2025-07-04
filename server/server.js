@@ -33,16 +33,19 @@ io.on('connection', (socket) => {
 
   // Handle screen sharing event
   socket.on('share-screen', (data) => {
+    console.log('Screen data received, broadcasting to', io.engine.clientsCount, 'clients');
     io.emit('share-screen', data);
   });
 
   // Handle voice sharing event
   socket.on('share-voice', (data) => {
+    console.log('Camera data received, broadcasting to', io.engine.clientsCount, 'clients');
     io.emit('share-voice', data);
   });
 
   // Handle location sharing event
   socket.on('share-location', (data) => {
+    console.log('Location data received, broadcasting to', io.engine.clientsCount, 'clients');
     io.emit('share-location', data);
   });
 

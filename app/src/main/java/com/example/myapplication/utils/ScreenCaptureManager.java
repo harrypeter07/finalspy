@@ -67,16 +67,40 @@ public class ScreenCaptureManager {
             stopCapture();
         }
         
-        // Start foreground service for screen capture
-        Intent serviceIntent = new Intent(context, com.example.myapplication.services.ScreenCaptureService.class);
-        context.startForegroundService(serviceIntent);
-        
         try {
-            mediaProjection = projectionManager.getMediaProjection(resultCode, resultData);
-            if (mediaProjection == null) {
-                listener.onScreenCaptureError("Failed to create media projection");
-                return;
-            }
+            // Start foreground service for screen capture BEFORE creating MediaProjection
+            Intent serviceIntent = new Intent(context, com.example.myapplication.services.ScreenCaptureService.class);
+            context.startForegroundService(serviceIntent);
+            
+            // Use a handler to delay MediaProjection creation slightly
+            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.postDelayed(() -> {
+                try {
+                    mediaProjection = projectionManager.getMediaProjection(resultCode, resultData);
+                    if (mediaProjection == null) {
+                        listener.onScreenCaptureError("Failed to create media projection");
+                        return;
+                    }
+                    
+                    // Continue with setup
+                    continueSetup(listener);
+                    
+                } catch (Exception e) {
+                    Log.e(TAG, "Error creating media projection", e);
+                    listener.onScreenCaptureError("Error creating media projection: " + e.getMessage());
+                }
+            }, 300); // 300ms delay to allow service to start
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting screen capture", e);
+            listener.onScreenCaptureError("Error starting screen capture: " + e.getMessage());
+        }
+    }
+    
+    private void continueSetup(ScreenCaptureListener listener) {
+        try {
+            // Register MediaProjection callback before creating virtual display
+            registerMediaProjectionCallback(listener);
             
             // Create encoder
             prepareVideoEncoder();
@@ -90,8 +114,45 @@ public class ScreenCaptureManager {
             isCapturing = true;
             
         } catch (Exception e) {
-            Log.e(TAG, "Error starting screen capture", e);
-            listener.onScreenCaptureError("Error starting screen capture: " + e.getMessage());
+            Log.e(TAG, "Error in setup continuation", e);
+            listener.onScreenCaptureError("Error in setup continuation: " + e.getMessage());
+        }
+    }
+    
+    private void registerMediaProjectionCallback(ScreenCaptureListener listener) {
+        if (mediaProjection != null) {
+            MediaProjection.Callback callback = new MediaProjection.Callback() {
+                @Override
+                public void onStop() {
+                    Log.d(TAG, "MediaProjection stopped");
+                    // Handle MediaProjection stop event
+                    if (isCapturing) {
+                        listener.onScreenCaptureError("MediaProjection was stopped");
+                        stopCapture();
+                    }
+                }
+                
+                @Override
+                public void onCapturedContentResize(int width, int height) {
+                    Log.d(TAG, "MediaProjection content resized: " + width + "x" + height);
+                    // Handle content resize if needed
+                }
+                
+                @Override
+                public void onCapturedContentVisibilityChanged(boolean isVisible) {
+                    Log.d(TAG, "MediaProjection content visibility changed: " + isVisible);
+                    // Handle visibility changes if needed
+                }
+            };
+            
+            // Register the callback with the main thread handler
+            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mediaProjection.registerCallback(callback, mainHandler);
+            
+            Log.d(TAG, "MediaProjection callback registered successfully");
+        } else {
+            Log.e(TAG, "Cannot register callback - MediaProjection is null");
+            listener.onScreenCaptureError("MediaProjection is null when trying to register callback");
         }
     }
     
@@ -161,6 +222,8 @@ public class ScreenCaptureManager {
     
     private void sendScreenDataToServer(byte[] data) {
         try {
+            Log.d(TAG, "Sending screen data to server: " + (data != null ? data.length + " bytes" : "null"));
+            
             // Convert byte array to Base64 string to send over JSON
             String base64Data = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
             

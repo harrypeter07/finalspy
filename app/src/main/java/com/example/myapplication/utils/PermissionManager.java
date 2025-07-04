@@ -65,6 +65,11 @@ public class PermissionManager {
             }
         }
         
+        // Add notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        
         Dexter.withContext(activity)
                 .withPermissions(permissions)
                 .withListener(new MultiplePermissionsListener() {
