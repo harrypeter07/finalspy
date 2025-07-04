@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Sharing App - Web Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .screen-container, .camera-container {
+            width: 100%;
+            background-color: #f0f0f0;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        video, img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        #status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #map {
+            height: 300px;
+            width: 100%;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Android Sharing App - Web Client</h1>
+    
+    <div id="status" class="disconnected">Disconnected</div>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Screen Sharing</h2>
+            <div class="screen-container">
+                <img id="screen-display" src="" alt="Waiting for screen sharing...">
+            </div>
+            <p id="screen-status">No screen is being shared</p>
+        </div>
+        
+        <div class="card">
+            <h2>Camera Sharing</h2>
+            <div class="camera-container">
+                <img id="camera-display" src="" alt="Waiting for camera sharing...">
+            </div>
+            <p id="camera-status">No camera is being shared</p>
+        </div>
+        
+        <div class="card">
+            <h2>Location Sharing</h2>
+            <div id="map"></div>
+            <p id="location-status">No location is being shared</p>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Connect to the server
+        const socket = io();
+        
+        // DOM elements
+        const statusElement = document.getElementById('status');
+        const screenDisplay = document.getElementById('screen-display');
+        const screenStatus = document.getElementById('screen-status');
+        const cameraDisplay = document.getElementById('camera-display');
+        const cameraStatus = document.getElementById('camera-status');
+        const locationStatus = document.getElementById('location-status');
+        
+        // Connection status
+        socket.on('connect', () => {
+            statusElement.textContent = 'Connected to server';
+            statusElement.classList.remove('disconnected');
+            statusElement.classList.add('connected');
+        });
+        
+        socket.on('disconnect', () => {
+            statusElement.textContent = 'Disconnected from server';
+            statusElement.classList.remove('connected');
+            statusElement.classList.add('disconnected');
+        });
+        
+        // Screen sharing
+        socket.on('share-screen', (data) => {
+            if (data && data.data) {
+                screenDisplay.src = 'data:image/jpeg;base64,' + data.data;
+                screenStatus.textContent = `Receiving screen: ${data.width}x${data.height}`;
+            }
+        });
+        
+        // Camera sharing
+        socket.on('share-voice', (data) => {
+            if (data && data.data) {
+                cameraDisplay.src = 'data:image/jpeg;base64,' + data.data;
+                cameraStatus.textContent = `Receiving camera: ${data.width}x${data.height}`;
+            }
+        });
+        
+        // Location sharing
+        let map;
+        let marker;
+        
+        function initMap() {
+            try {
+                // This function will be called by the Google Maps API
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: 0, lng: 0 },
+                    zoom: 2
+                });
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                document.getElementById('map').innerHTML = '<div style="padding: 20px; text-align: center;">Map unavailable - API key required</div>';
+            }
+        }
+        
+        socket.on('share-location', (data) => {
+            if (data && data.latitude && data.longitude) {
+                const position = {
+                    lat: data.latitude,
+                    lng: data.longitude
+                };
+                
+                locationStatus.textContent = `Receiving location: ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
+                
+                if (map) {
+                    // If marker doesn't exist, create it
+                    if (!marker) {
+                        marker = new google.maps.Marker({
+                            position: position,
+                            map: map,
+                            title: 'Shared Location'
+                        });
+                    } else {
+                        // Update marker position
+                        marker.setPosition(position);
+                    }
+                    
+                    // Center map on marker
+                    map.setCenter(position);
+                    map.setZoom(15);
+                }
+            }
+        });
+    </script>
+    <!-- Uncomment and add your API key to enable Google Maps -->    
+    <!--
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
+    </script>
+    -->
+    
+    <!-- Fallback for when Google Maps API is not available -->
+    <script>
+        // Initialize map with a simple placeholder
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('map').innerHTML = '<div style="padding: 20px; text-align: center;">Location data will be displayed as text below.</div>';
+        });
+    </script>
+</body>
+</html>
