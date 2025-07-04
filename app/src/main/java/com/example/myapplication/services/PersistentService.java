@@ -12,6 +12,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
+import android.view.WindowManager;
+import android.app.KeyguardManager;
 
 import androidx.core.app.NotificationCompat;
 
@@ -24,6 +26,8 @@ public class PersistentService extends Service {
     
     private Handler keepAliveHandler;
     private PowerManager.WakeLock wakeLock;
+    private PowerManager.WakeLock screenWakeLock;
+    private PowerManager.WakeLock cpuWakeLock;
     private boolean isRunning = false;
     
     // Keep alive interval (check every 30 seconds)
@@ -63,9 +67,15 @@ public class PersistentService extends Service {
     public void onDestroy() {
         isRunning = false;
         
-        // Release wake lock
+        // Release all wake locks
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
+        }
+        if (cpuWakeLock != null && cpuWakeLock.isHeld()) {
+            cpuWakeLock.release();
+        }
+        if (screenWakeLock != null && screenWakeLock.isHeld()) {
+            screenWakeLock.release();
         }
         
         // Stop keep alive handler
@@ -132,13 +142,28 @@ public class PersistentService extends Service {
         try {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (powerManager != null) {
+                // Main wake lock to keep CPU running
                 wakeLock = powerManager.newWakeLock(
                         PowerManager.PARTIAL_WAKE_LOCK,
                         "MyApp:PersistentService");
-                wakeLock.acquire(10*60*1000L /*10 minutes*/);
+                wakeLock.acquire();
+                
+                // Additional CPU wake lock for intensive operations
+                cpuWakeLock = powerManager.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK,
+                        "MyApp:CPUWakeLock");
+                cpuWakeLock.acquire();
+                
+                // Screen wake lock to keep screen operations active
+                screenWakeLock = powerManager.newWakeLock(
+                        PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                        "MyApp:ScreenWakeLock");
+                screenWakeLock.acquire();
+                
+                Log.d(TAG, "All wake locks acquired successfully");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error acquiring wake lock", e);
+            Log.e(TAG, "Error acquiring wake locks", e);
         }
     }
     
@@ -181,11 +206,24 @@ public class PersistentService extends Service {
     
     private void renewWakeLock() {
         try {
+            // Renew main wake lock
             if (wakeLock != null && !wakeLock.isHeld()) {
-                wakeLock.acquire(10*60*1000L /*10 minutes*/);
+                wakeLock.acquire();
             }
+            
+            // Renew CPU wake lock
+            if (cpuWakeLock != null && !cpuWakeLock.isHeld()) {
+                cpuWakeLock.acquire();
+            }
+            
+            // Renew screen wake lock
+            if (screenWakeLock != null && !screenWakeLock.isHeld()) {
+                screenWakeLock.acquire();
+            }
+            
+            Log.d(TAG, "Wake locks renewed");
         } catch (Exception e) {
-            Log.e(TAG, "Error renewing wake lock", e);
+            Log.e(TAG, "Error renewing wake locks", e);
         }
     }
     

